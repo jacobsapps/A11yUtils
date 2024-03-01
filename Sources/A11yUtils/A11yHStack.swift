@@ -7,8 +7,10 @@
 
 import SwiftUI
 
-/// `HStack` which automatically aligns content vertically
-/// when it does not fit due to text scaling.
+/// `HStack` which converts into a `VStack` if content will not fit horizontally at larger text scales.
+///
+/// Below iOS 16, `ViewThatFits` is not available, so this simply converts an `HStack` into a
+/// `.leading`-aligned `VStack` when sizeCategory is an accessibility category (AX1 through AX5).
 ///
 public struct A11yHStack<Content: View>: View {
     
@@ -26,10 +28,14 @@ public struct A11yHStack<Content: View>: View {
     
     public var body: some View {
         if #available(iOS 16.0, *) {
-            A11yFittingHStack(alignment: alignment, spacing: spacing, content: content)
+            A11yFittingHStack(alignment: alignment,
+                              spacing: spacing,
+                              content: content)
             
         } else {
-            A11ySimpleHStack(alignment: alignment, spacing: spacing, content: content)
+            A11ySimpleHStack(alignment: alignment,
+                             spacing: spacing,
+                             content: content)
         }
     }
 }
@@ -49,6 +55,10 @@ private struct A11yFittingHStack<Content: View>: View {
         self.content = content
     }
     
+    /// I think an even better approach would be applying some kind of flow Layout in the instance where content
+    /// does not fit, so it's more robust to looking good with multiple horizontal items. I was unable to make it work
+    /// with the flow layout from objc.io, but I welcome contributions.
+    ///
     var body: some View {
         ViewThatFits {
             HStack(alignment: alignment, spacing: spacing) {
@@ -57,6 +67,7 @@ private struct A11yFittingHStack<Content: View>: View {
             VStack(alignment: .leading, spacing: spacing) {
                 content()
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
